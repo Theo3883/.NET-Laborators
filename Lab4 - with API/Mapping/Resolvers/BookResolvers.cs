@@ -4,7 +4,7 @@ using Lab3.Model;
 
 namespace Lab3.Mapping.Resolvers;
 
-public abstract class CategoryDisplayResolver : IValueResolver<Book, BookProfileDto, string>
+public class CategoryDisplayResolver : IValueResolver<Book, BookProfileDto, string>
 {
     public string Resolve(Book source, BookProfileDto destination, string destMember, ResolutionContext context)
     {
@@ -29,7 +29,7 @@ public class PriceFormatterResolver : IValueResolver<Book, BookProfileDto, strin
     }
 }
 
-public abstract class PublishedAgeResolver : IValueResolver<Book, BookProfileDto, string>
+public class PublishedAgeResolver : IValueResolver<Book, BookProfileDto, string>
 {
     public string Resolve(Book source, BookProfileDto destination, string destMember, ResolutionContext context)
     {
@@ -45,7 +45,7 @@ public abstract class PublishedAgeResolver : IValueResolver<Book, BookProfileDto
     }
 }
 
-public abstract class AuthorInitialsResolver : IValueResolver<Book, BookProfileDto, string>
+public class AuthorInitialsResolver : IValueResolver<Book, BookProfileDto, string>
 {
     public string Resolve(Book source, BookProfileDto destination, string destMember, ResolutionContext context)
     {
@@ -63,7 +63,7 @@ public abstract class AuthorInitialsResolver : IValueResolver<Book, BookProfileD
     }
 }
 
-public abstract class AvailabilityStatusResolver : IValueResolver<Book, BookProfileDto, string>
+public class AvailabilityStatusResolver : IValueResolver<Book, BookProfileDto, string>
 {
     public string Resolve(Book source, BookProfileDto destination, string destMember, ResolutionContext context)
     {
@@ -80,7 +80,7 @@ public abstract class AvailabilityStatusResolver : IValueResolver<Book, BookProf
     }
 }
 
-public abstract class ConditionalCoverImageResolver : IValueResolver<Book, BookProfileDto, string?>
+public class ConditionalCoverImageResolver : IValueResolver<Book, BookProfileDto, string?>
 {
     public string? Resolve(Book source, BookProfileDto destination, string? destMember, ResolutionContext context)
     {
@@ -88,7 +88,7 @@ public abstract class ConditionalCoverImageResolver : IValueResolver<Book, BookP
     }
 }
 
-public abstract class ConditionalPriceResolver : IValueResolver<Book, BookProfileDto, decimal>
+public class ConditionalPriceResolver : IValueResolver<Book, BookProfileDto, decimal>
 {
     public decimal Resolve(Book source, BookProfileDto destination, decimal destMember, ResolutionContext context)
     {

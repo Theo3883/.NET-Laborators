@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-# Advanced Book API Testing Script
-# Tests all new features: Categories, AutoMapper, Validation, Logging, Middleware
 
 BASE_URL="http://localhost:5021"
 
@@ -522,12 +520,6 @@ curl -s "$BASE_URL/books?category=2&page=1&pageSize=5" | jq 'if .data then {tota
 echo "\nCache stats after batch:"
 curl -s "$BASE_URL/books/cache/stats" | jq '{cacheHits, cacheMisses, hitRatePercentage, totalInvalidations}'
 
-echo "\n✅ Batch operations bonus feature completed!"
-echo "   - Small batch (sequential): Working"
-echo "   - Large batch (parallel): Working"
-echo "   - Mixed validation: Working"
-echo "   - Cache invalidation: Working"
-echo "   + BONUS POINTS: +10"
 
 echo "\n=== PHASE 9: MULTI-LANGUAGE SUPPORT TESTING ==="
 echo "Testing book localization in multiple languages..."
@@ -627,23 +619,3 @@ curl -s "$BASE_URL/metadata/categories?culture=fr" | jq '.categories'
 echo "\n8. Testing fallback to unsupported culture (Chinese)..."
 curl -s "$BASE_URL/books/$LOCALIZATION_BOOK_ID/localized?culture=zh-CN" | jq '{title, category, culture, note: "Should fallback to English"}'
 
-# List all localizations
-echo "\n9. Getting all localizations for the book..."
-curl -s "$BASE_URL/books/$LOCALIZATION_BOOK_ID/localizations" | jq 'length as $count | {totalLocalizations: $count, cultures: [.[].cultureCode]}'
-
-echo "\n✅ Multi-language support bonus feature completed!"
-echo "   - Book titles in 5 languages: Working"
-echo "   - XML-based metadata resources: Working"
-echo "   - Category localization: Working"
-echo "   - Availability status localization: Working"
-echo "   - Fallback to default language: Working"
-echo "   + BONUS POINTS: +10"
-
-echo "\n=== FINAL SCORE CALCULATION ==="
-echo "Core Requirements: 100 points"
-echo "Bonus 1 (Category Caching): +10 points"
-echo "Bonus 2 (Metrics Dashboard): +10 points"
-echo "Bonus 3 (Batch Operations): +10 points"
-echo "Bonus 4 (Multi-Language Support): +10 points"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "TOTAL SCORE: 140/100 points ⭐⭐"
