@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources culture="es">
+  <categories>
+    <category id="Fiction">
+      <name>Ficción y Literatura</name>
+      <description>Novelas, cuentos y obras literarias</description>
+    </category>
+    <category id="NonFiction">
+      <name>No Ficción</name>
+      <description>Biografías, ensayos y obras de hechos reales</description>
+    </category>
+    <category id="Technical">
+      <name>Técnico y Programación</name>
+      <description>Libros de programación, manuales técnicos y recursos de TI</description>
+    </category>
+    <category id="Children">
+      <name>Libros Infantiles</name>
+      <description>Libros para jóvenes lectores y niños</description>
+    </category>
+  </categories>
+  <ui>
+    <availabilityStatus>
+      <inStock>En Stock</inStock>
+      <lowStock>Stock Bajo</lowStock>
+      <outOfStock>Agotado</outOfStock>
+    </availabilityStatus>
+    <labels>
+      <price>Precio</price>
+      <author>Autor</author>
+      <isbn>ISBN</isbn>
+      <publishedDate>Fecha de Publicación</publishedDate>
+      <stock>Cantidad en Stock</stock>
+      <category>Categoría</category>
+    </labels>
+  </ui>
+</resources>

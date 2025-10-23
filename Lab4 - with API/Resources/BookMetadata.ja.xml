@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources culture="ja">
+  <categories>
+    <category id="Fiction">
+      <name>フィクション・文学</name>
+      <description>小説、短編小説、文学作品</description>
+    </category>
+    <category id="NonFiction">
+      <name>ノンフィクション</name>
+      <description>伝記、エッセイ、事実に基づく作品</description>
+    </category>
+    <category id="Technical">
+      <name>技術・プログラミング</name>
+      <description>プログラミング書籍、技術マニュアル、ITリソース</description>
+    </category>
+    <category id="Children">
+      <name>児童書</name>
+      <description>若い読者と子供向けの本</description>
+    </category>
+  </categories>
+  <ui>
+    <availabilityStatus>
+      <inStock>在庫あり</inStock>
+      <lowStock>在庫僅少</lowStock>
+      <outOfStock>在庫切れ</outOfStock>
+    </availabilityStatus>
+    <labels>
+      <price>価格</price>
+      <author>著者</author>
+      <isbn>ISBN</isbn>
+      <publishedDate>発行日</publishedDate>
+      <stock>在庫数</stock>
+      <category>カテゴリー</category>
+    </labels>
+  </ui>
+</resources>

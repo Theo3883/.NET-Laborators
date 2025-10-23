@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources culture="de">
+  <categories>
+    <category id="Fiction">
+      <name>Fiktion und Literatur</name>
+      <description>Romane, Kurzgeschichten und literarische Werke</description>
+    </category>
+    <category id="NonFiction">
+      <name>Sachbuch</name>
+      <description>Biografien, Essays und Sachwerke</description>
+    </category>
+    <category id="Technical">
+      <name>Technik und Programmierung</name>
+      <description>Programmierbücher, technische Handbücher und IT-Ressourcen</description>
+    </category>
+    <category id="Children">
+      <name>Kinderbücher</name>
+      <description>Bücher für junge Leser und Kinder</description>
+    </category>
+  </categories>
+  <ui>
+    <availabilityStatus>
+      <inStock>Auf Lager</inStock>
+      <lowStock>Geringer Bestand</lowStock>
+      <outOfStock>Ausverkauft</outOfStock>
+    </availabilityStatus>
+    <labels>
+      <price>Preis</price>
+      <author>Autor</author>
+      <isbn>ISBN</isbn>
+      <publishedDate>Veröffentlichungsdatum</publishedDate>
+      <stock>Lagerbestand</stock>
+      <category>Kategorie</category>
+    </labels>
+  </ui>
+</resources>

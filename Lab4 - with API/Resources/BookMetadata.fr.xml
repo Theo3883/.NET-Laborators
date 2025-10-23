@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources culture="fr">
+  <categories>
+    <category id="Fiction">
+      <name>Fiction et Littérature</name>
+      <description>Romans, nouvelles et œuvres littéraires</description>
+    </category>
+    <category id="NonFiction">
+      <name>Non-Fiction</name>
+      <description>Biographies, essais et ouvrages factuels</description>
+    </category>
+    <category id="Technical">
+      <name>Technique et Programmation</name>
+      <description>Livres de programmation, manuels techniques et ressources informatiques</description>
+    </category>
+    <category id="Children">
+      <name>Livres pour Enfants</name>
+      <description>Livres pour jeunes lecteurs et enfants</description>
+    </category>
+  </categories>
+  <ui>
+    <availabilityStatus>
+      <inStock>En Stock</inStock>
+      <lowStock>Stock Faible</lowStock>
+      <outOfStock>Épuisé</outOfStock>
+    </availabilityStatus>
+    <labels>
+      <price>Prix</price>
+      <author>Auteur</author>
+      <isbn>ISBN</isbn>
+      <publishedDate>Date de Publication</publishedDate>
+      <stock>Quantité en Stock</stock>
+      <category>Catégorie</category>
+    </labels>
+  </ui>
+</resources>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources culture="en-US">
+  <categories>
+    <category id="Fiction">
+      <name>Fiction &amp; Literature</name>
+      <description>Novels, short stories, and literary works</description>
+    </category>
+    <category id="NonFiction">
+      <name>Non-Fiction</name>
+      <description>Biographies, essays, and factual works</description>
+    </category>
+    <category id="Technical">
+      <name>Technical &amp; Programming</name>
+      <description>Programming books, technical manuals, and IT resources</description>
+    </category>
+    <category id="Children">
+      <name>Children's Books</name>
+      <description>Books for young readers and children</description>
+    </category>
+  </categories>
+  <ui>
+    <availabilityStatus>
+      <inStock>In Stock</inStock>
+      <lowStock>Low Stock</lowStock>
+      <outOfStock>Out of Stock</outOfStock>
+    </availabilityStatus>
+    <labels>
+      <price>Price</price>
+      <author>Author</author>
+      <isbn>ISBN</isbn>
+      <publishedDate>Published Date</publishedDate>
+      <stock>Stock Quantity</stock>
+      <category>Category</category>
+    </labels>
+  </ui>
+</resources>
