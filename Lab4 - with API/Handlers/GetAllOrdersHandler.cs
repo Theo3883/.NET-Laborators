@@ -27,16 +27,17 @@ public class GetAllOrdersHandler
         _cacheService = cacheService;
     }
 
-    public async Task<Ok<List<OrderProfileDto>>> Handle(GetAllOrdersRequest request)
+    public async Task<Ok<List<OrderProfileDto>>> Handle(GetAllOrdersRequest request, HttpContext httpContext)
     {
-        _logger.LogInformation("Getting all orders");
+        var traceId = httpContext.TraceIdentifier;
+        _logger.LogInformation("Getting all orders - TraceId: {TraceId}", traceId);
 
         // Check cache
         const string cacheKey = "all_orders";
         var cachedOrders = _cacheService.GetCachedOrder<List<OrderProfileDto>>(cacheKey);
         if (cachedOrders != null)
         {
-            _logger.LogInformation("Retrieved {Count} orders from cache", cachedOrders.Count);
+            _logger.LogInformation("Retrieved {Count} orders from cache - TraceId: {TraceId}", cachedOrders.Count, traceId);
             return TypedResults.Ok(cachedOrders);
         }
 

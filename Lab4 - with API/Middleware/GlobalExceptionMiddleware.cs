@@ -5,39 +5,16 @@ namespace Lab3.Middleware;
 
 public class GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExceptionMiddleware> logger)
 {
-    private const string CorrelationIdHeaderName = "X-Correlation-ID";
-
     public async Task InvokeAsync(HttpContext context)
     {
-        // Extract or generate correlation ID
-        var correlationId = context.Request.Headers[CorrelationIdHeaderName].FirstOrDefault()
-                            ?? Guid.NewGuid().ToString();
-
-        // Add correlation ID to response headers
-        context.Response.Headers[CorrelationIdHeaderName] = correlationId;
-
-        // Add correlation ID to logging scope
-        using (logger.BeginScope(new Dictionary<string, object>
+        try
         {
-            ["CorrelationId"] = correlationId
-        }))
+            await next(context);
+        }
+        catch (Exception ex)
         {
-            logger.LogDebug("Request started - CorrelationId: {CorrelationId}, Method: {Method}, Path: {Path}",
-                correlationId, context.Request.Method, context.Request.Path);
-
-            try
-            {
-                await next(context);
-
-                logger.LogDebug("Request completed - CorrelationId: {CorrelationId}, StatusCode: {StatusCode}",
-                    correlationId, context.Response.StatusCode);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "An unhandled exception occurred. CorrelationId: {CorrelationId}, TraceId: {TraceId}",
-                    correlationId, context.TraceIdentifier);
-                await HandleExceptionAsync(context, ex);
-            }
+            logger.LogError(ex, "An unhandled exception occurred. TraceId: {TraceId}", context.TraceIdentifier);
+            await HandleExceptionAsync(context, ex);
         }
     }
 
@@ -48,6 +25,8 @@ public class GlobalExceptionMiddleware(RequestDelegate next, ILogger<GlobalExcep
         ErrorResponse errorResponse;
         int statusCode;
 
+        // For now, handle all exceptions as internal server errors
+        // Can be extended with custom exception types later
         errorResponse = new ErrorResponse("INTERNAL_SERVER_ERROR", "An unexpected error occurred")
         {
             TraceId = context.TraceIdentifier
@@ -67,7 +46,7 @@ public class ErrorResponse()
         ErrorCode = errorCode;
         Message = message;
     }
-
+    
     public ErrorResponse(string errorCode, string message, List<string> details) : this(errorCode, message)
     {
         Details = details;
@@ -78,6 +57,6 @@ public class ErrorResponse()
     public string Message { get; set; } = string.Empty;
 
     public string ErrorCode { get; set; } = string.Empty;
-
+    
     public string TraceId { get; set; } = string.Empty;
 }

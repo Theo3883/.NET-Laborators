@@ -45,8 +45,11 @@ public class CreateOrderProfileValidator : AbstractValidator<CreateOrderProfileR
         return Enum.TryParse<OrderCategory>(category, true, out _);
     }
 
-    private bool BeValidUrl(string url)
+    private bool BeValidUrl(string? url)
     {
+        if (string.IsNullOrEmpty(url))
+            return true;
+            
         return Uri.TryCreate(url, UriKind.Absolute, out var uriResult) 
             && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
     }

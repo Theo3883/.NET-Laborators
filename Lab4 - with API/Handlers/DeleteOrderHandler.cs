@@ -1,8 +1,10 @@
 using FluentValidation;
 using Lab3.DTO.Request;
+using Lab3.Logging;
 using Lab3.Persistence;
 using Lab3.Services;
 using Microsoft.AspNetCore.Http.HttpResults;
+using System.Diagnostics;
 
 namespace Lab3.Handlers;
 
@@ -25,41 +27,75 @@ public class DeleteOrderHandler
         _cacheService = cacheService;
     }
 
-    public async Task<Results<NoContent, ValidationProblem, NotFound>> Handle(DeleteOrderRequest request)
+    public async Task<Results<NoContent, ValidationProblem, NotFound>> Handle(
+        DeleteOrderRequest request,
+        HttpContext httpContext)
     {
-        _logger.LogInformation("Deleting order: {OrderId}", request.Id);
+        var operationId = Guid.NewGuid().ToString("N")[..8];
+        var stopwatch = Stopwatch.StartNew();
+        var traceId = httpContext.TraceIdentifier;
+        
+        _logger.LogInformation(
+            new EventId(LogEvents.OrderDeleteStarted, nameof(LogEvents.OrderDeleteStarted)),
+            "Order deletion started - OperationId: {OperationId}, OrderId: {OrderId}, TraceId: {TraceId}",
+            operationId, request.Id, traceId);
 
         // Validation
         var validationResult = await _validator.ValidateAsync(request);
         if (!validationResult.IsValid)
         {
-            _logger.LogWarning("Validation failed for order deletion: {OrderId}", request.Id);
-            return TypedResults.ValidationProblem(validationResult.ToDictionary());
+            _logger.LogWarning(
+                new EventId(LogEvents.ValidationFailed, nameof(LogEvents.ValidationFailed)),
+                "Validation failed for order deletion - OperationId: {OperationId}, OrderId: {OrderId}, TraceId: {TraceId}",
+                operationId, request.Id, traceId);
+            
+            var extensions = new Dictionary<string, object?> { ["traceId"] = traceId };
+            return TypedResults.ValidationProblem(validationResult.ToDictionary(), extensions: extensions);
         }
 
         // Parse ID
         if (!Guid.TryParse(request.Id, out var orderId))
         {
-            _logger.LogWarning("Invalid order ID format: {OrderId}", request.Id);
+            _logger.LogWarning(
+                new EventId(LogEvents.OrderNotFound, nameof(LogEvents.OrderNotFound)),
+                "Invalid order ID format - OperationId: {OperationId}, OrderId: {OrderId}, TraceId: {TraceId}",
+                operationId, request.Id, traceId);
             return TypedResults.NotFound();
         }
 
         // Find order
+        _logger.LogDatabaseOperationStarted(operationId, "FindOrder");
         var order = await _context.Orders.FindAsync(orderId);
+        
         if (order == null)
         {
-            _logger.LogWarning("Order not found for deletion: {OrderId}", request.Id);
+            _logger.LogWarning(
+                new EventId(LogEvents.OrderNotFound, nameof(LogEvents.OrderNotFound)),
+                "Order not found for deletion - OperationId: {OperationId}, OrderId: {OrderId}, TraceId: {TraceId}",
+                operationId, request.Id, traceId);
             return TypedResults.NotFound();
         }
 
         // Delete order
+        _logger.LogDatabaseOperationStarted(operationId, "DeleteOrder");
+        var dbStopwatch = Stopwatch.StartNew();
+        
         _context.Orders.Remove(order);
         await _context.SaveChangesAsync();
+        
+        dbStopwatch.Stop();
+        _logger.LogDatabaseOperationCompleted(operationId, "DeleteOrder", order.Id.ToString(), dbStopwatch.ElapsedMilliseconds);
 
-        // Invalidate all caches
+        // Invalidate caches
+        _logger.LogCacheOperation(operationId, "InvalidateAllOrderCaches");
         _cacheService.InvalidateAllOrderCaches();
 
-        _logger.LogInformation("Order deleted successfully: {OrderId}, Title: {Title}", request.Id, order.Title);
+        stopwatch.Stop();
+        _logger.LogInformation(
+            new EventId(LogEvents.OrderDeleteCompleted, nameof(LogEvents.OrderDeleteCompleted)),
+            "Order deleted successfully - OperationId: {OperationId}, OrderId: {OrderId}, Title: {Title}, Duration: {Duration}ms",
+            operationId, request.Id, order.Title, stopwatch.ElapsedMilliseconds);
+            
         return TypedResults.NoContent();
     }
 }

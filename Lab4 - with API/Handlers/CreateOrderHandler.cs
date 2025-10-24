@@ -2,6 +2,7 @@ using AutoMapper;
 using FluentValidation;
 using Lab3.DTO;
 using Lab3.DTO.Request;
+using Lab3.Logging;
 using Lab3.Model;
 using Lab3.Persistence;
 using Lab3.Services;
@@ -33,93 +34,185 @@ public class CreateOrderHandler
         _cacheService = cacheService;
     }
 
-    public async Task<Results<Created<OrderProfileDto>, ValidationProblem, Conflict<object>>> Handle(CreateOrderProfileRequest request)
+    public async Task<Results<Created<OrderProfileDto>, ValidationProblem, Conflict<object>>> Handle(
+        CreateOrderProfileRequest request, 
+        HttpContext httpContext)
     {
+        // Generate unique 8-character operation ID for tracking
         var operationId = Guid.NewGuid().ToString("N")[..8];
-        var stopwatch = Stopwatch.StartNew();
+        var totalStopwatch = Stopwatch.StartNew();
+        var traceId = httpContext.TraceIdentifier;
         
-        _logger.LogInformation(
-            "Order creation operation started - OperationId: {OperationId}, Title: {Title}, Author: {Author}, ISBN: {ISBN}, Category: {Category}",
-            operationId, request.Title, request.Author, request.ISBN, request.Category);
+        // Parse category early for logging purposes
+        Enum.TryParse<OrderCategory>(request.Category, true, out var category);
+        
+        // Create logging scope for entire operation (correlation)
+        using var logScope = _logger.BeginScope(new Dictionary<string, object>
+        {
+            ["OperationId"] = operationId,
+            ["TraceId"] = traceId,
+            ["OrderTitle"] = request.Title,
+            ["ISBN"] = request.ISBN,
+            ["Category"] = category
+        });
+
+        // Log operation start with order-specific details
+        _logger.LogOrderCreationStarted(operationId, request.Title, request.Author, request.ISBN, category);
+
+        TimeSpan validationDuration = TimeSpan.Zero;
+        TimeSpan databaseDuration = TimeSpan.Zero;
+        string? errorReason = null;
 
         try
         {
-            // Validation
+            // Validation phase - FluentValidation rules
             var validationStopwatch = Stopwatch.StartNew();
             var validationResult = await _validator.ValidateAsync(request);
             validationStopwatch.Stop();
+            validationDuration = validationStopwatch.Elapsed;
 
             if (!validationResult.IsValid)
             {
-                _logger.LogWarning(
-                    "Validation failed for order creation - OperationId: {OperationId}, Title: {Title}, ISBN: {ISBN}, Errors: {Errors}",
-                    operationId, request.Title, request.ISBN, string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage)));
-
-                _logger.LogError(
-                    "Order creation failed - OperationId: {OperationId}, Title: {Title}, ISBN: {ISBN}, Category: {Category}, ValidationDuration: {ValidationDuration}ms, DatabaseSaveDuration: {DbDuration}ms, TotalDuration: {TotalDuration}ms, Success: {Success}, ErrorReason: {ErrorReason}",
-                    operationId, request.Title, request.ISBN, request.Category,
-                    validationStopwatch.ElapsedMilliseconds, 0, stopwatch.ElapsedMilliseconds, false, "Validation failed");
+                errorReason = $"Validation failed: {string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage))}";
+                
+                // Log comprehensive metrics for validation failure
+                _logger.LogOrderCreationMetrics(new OrderCreationMetrics
+                {
+                    OperationId = operationId,
+                    OrderTitle = request.Title,
+                    ISBN = request.ISBN,
+                    Category = category,
+                    ValidationDuration = validationDuration,
+                    DatabaseSaveDuration = databaseDuration,
+                    TotalDuration = totalStopwatch.Elapsed,
+                    Success = false,
+                    ErrorReason = errorReason
+                });
 
                 var errors = validationResult.Errors
                     .GroupBy(e => e.PropertyName)
                     .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
 
-                return TypedResults.ValidationProblem(errors);
+                // Add TraceId to extensions for tracking
+                var extensions = new Dictionary<string, object?>
+                {
+                    ["traceId"] = traceId
+                };
+
+                return TypedResults.ValidationProblem(errors, extensions: extensions);
             }
 
-            // Check ISBN uniqueness
+            // ISBN uniqueness validation with performance tracking
+            var isbnValidationStopwatch = Stopwatch.StartNew();
             var isbnExists = await _context.Orders.AnyAsync(o => o.ISBN == request.ISBN);
+            isbnValidationStopwatch.Stop();
+            
+            // Log ISBN validation with ISBNValidationPerformed event
+            _logger.LogISBNValidation(
+                operationId, 
+                request.ISBN, 
+                !isbnExists, 
+                isbnValidationStopwatch.ElapsedMilliseconds);
+
             if (isbnExists)
             {
-                _logger.LogWarning(
-                    "Duplicate ISBN found - OperationId: {OperationId}, ISBN: {ISBN}",
-                    operationId, request.ISBN);
+                errorReason = $"Duplicate ISBN: {request.ISBN}";
+                
+                // Log metrics for ISBN conflict
+                _logger.LogOrderCreationMetrics(new OrderCreationMetrics
+                {
+                    OperationId = operationId,
+                    OrderTitle = request.Title,
+                    ISBN = request.ISBN,
+                    Category = category,
+                    ValidationDuration = validationDuration,
+                    DatabaseSaveDuration = databaseDuration,
+                    TotalDuration = totalStopwatch.Elapsed,
+                    Success = false,
+                    ErrorReason = errorReason
+                });
 
                 return TypedResults.Conflict((object)new
                 {
                     message = $"An order with ISBN '{request.ISBN}' already exists.",
-                    isbn = request.ISBN
+                    isbn = request.ISBN,
+                    traceId = traceId
                 });
             }
 
-            // Map and create order using advanced mapping
+            // Stock quantity validation with StockValidationPerformed event
+            _logger.LogStockValidation(
+                operationId, 
+                request.StockQuantity, 
+                request.StockQuantity >= 0);
+
+            // Database operation with performance tracking
+            _logger.LogDatabaseOperationStarted(operationId, "CreateOrder");
+            
             var dbStopwatch = Stopwatch.StartNew();
+            
+            // Map request to entity using AutoMapper
             var order = _mapper.Map<Order>(request);
             
+            // Add to context and persist
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
+            
             dbStopwatch.Stop();
+            databaseDuration = dbStopwatch.Elapsed;
 
-            _logger.LogInformation(
-                "Database operation completed - OperationId: {OperationId}, OrderId: {OrderId}, Title: {Title}, ISBN: {ISBN}, Duration: {Duration}ms",
-                operationId, order.Id, request.Title, request.ISBN, dbStopwatch.ElapsedMilliseconds);
+            // Log database operation completion with OrderId
+            _logger.LogDatabaseOperationCompleted(
+                operationId, 
+                "CreateOrder", 
+                order.Id.ToString(), 
+                dbStopwatch.ElapsedMilliseconds);
 
-            // Invalidate all orders cache
+            // Cache invalidation with "all_orders" cache key logging
+            _logger.LogCacheOperation(operationId, "InvalidateAllOrderCaches", "orders_all");
             _cacheService.InvalidateAllOrderCaches();
-            _logger.LogInformation(
-                "Cache invalidation performed - OperationId: {OperationId}",
-                operationId);
 
-            // Map to DTO with custom resolvers
+            // Map to DTO with custom resolvers (conditional price, cover image, etc.)
             var orderDto = _mapper.Map<OrderProfileDto>(order);
 
-            stopwatch.Stop();
+            totalStopwatch.Stop();
 
-            _logger.LogInformation(
-                "Order creation completed successfully - OperationId: {OperationId}, Title: {Title}, ISBN: {ISBN}, Category: {Category}, ValidationDuration: {ValidationDuration}ms, DatabaseSaveDuration: {DbDuration}ms, TotalDuration: {TotalDuration}ms, Success: {Success}",
-                operationId, request.Title, request.ISBN, request.Category,
-                validationStopwatch.ElapsedMilliseconds, dbStopwatch.ElapsedMilliseconds, stopwatch.ElapsedMilliseconds, true);
+            // Log comprehensive OrderCreationMetrics for successful operation
+            _logger.LogOrderCreationMetrics(new OrderCreationMetrics
+            {
+                OperationId = operationId,
+                OrderTitle = request.Title,
+                ISBN = request.ISBN,
+                Category = category,
+                ValidationDuration = validationDuration,
+                DatabaseSaveDuration = databaseDuration,
+                TotalDuration = totalStopwatch.Elapsed,
+                Success = true,
+                ErrorReason = null
+            });
 
             return TypedResults.Created($"/orders/{order.Id}", orderDto);
         }
         catch (Exception ex)
         {
-            stopwatch.Stop();
+            totalStopwatch.Stop();
+            errorReason = $"Exception: {ex.Message}";
             
-            _logger.LogError(ex,
-                "Error creating order - OperationId: {OperationId}, Title: {Title}, Author: {Author}, ISBN: {ISBN}",
-                operationId, request.Title, request.Author, request.ISBN);
+            // Log error metrics in catch block with order details
+            _logger.LogOrderCreationMetrics(new OrderCreationMetrics
+            {
+                OperationId = operationId,
+                OrderTitle = request.Title,
+                ISBN = request.ISBN,
+                Category = category,
+                ValidationDuration = validationDuration,
+                DatabaseSaveDuration = databaseDuration,
+                TotalDuration = totalStopwatch.Elapsed,
+                Success = false,
+                ErrorReason = errorReason
+            });
 
+            // Re-throw exception for global exception handler
             throw;
         }
     }

@@ -19,9 +19,10 @@ public static class EndpointConfiguration
     {
         // CREATE
         app.MapPost("/orders", async ([FromBody] CreateOrderProfileRequest request, 
+            HttpContext httpContext,
             [FromServices] CreateOrderHandler handler) =>
         {
-            return await handler.Handle(request);
+            return await handler.Handle(request, httpContext);
         })
         .WithName("CreateOrder")
         .WithDescription("Create a new order with advanced validation, AutoMapper, and business rules")
@@ -31,9 +32,12 @@ public static class EndpointConfiguration
         .Produces(StatusCodes.Status409Conflict);
 
         // GET BY ID
-        app.MapGet("/orders/{id}", async (string id, [FromServices] GetOrderByIdHandler handler) =>
+        app.MapGet("/orders/{id}", async (
+            string id, 
+            HttpContext httpContext,
+            [FromServices] GetOrderByIdHandler handler) =>
         {
-            return await handler.Handle(new GetOrderByIdRequest(id));
+            return await handler.Handle(new GetOrderByIdRequest(id), httpContext);
         })
         .WithName("GetOrderById")
         .WithDescription("Retrieve a specific order by its ID")
@@ -43,9 +47,11 @@ public static class EndpointConfiguration
         .Produces(StatusCodes.Status404NotFound);
 
         // GET ALL
-        app.MapGet("/orders", async ([FromServices] GetAllOrdersHandler handler) =>
+        app.MapGet("/orders", async (
+            HttpContext httpContext,
+            [FromServices] GetAllOrdersHandler handler) =>
         {
-            return await handler.Handle(new GetAllOrdersRequest());
+            return await handler.Handle(new GetAllOrdersRequest(), httpContext);
         })
         .WithName("GetAllOrders")
         .WithDescription("Retrieve all orders")
@@ -56,9 +62,10 @@ public static class EndpointConfiguration
         app.MapGet("/orders/paginated", async (
             [FromQuery] int page, 
             [FromQuery] int pageSize,
+            HttpContext httpContext,
             [FromServices] GetOrdersWithPaginationHandler handler) =>
         {
-            return await handler.Handle(new GetOrdersWithPaginationRequest(page, pageSize));
+            return await handler.Handle(new GetOrdersWithPaginationRequest(page, pageSize), httpContext);
         })
         .WithName("GetOrdersPaginated")
         .WithDescription("Retrieve orders with pagination support")
@@ -69,12 +76,13 @@ public static class EndpointConfiguration
         // UPDATE
         app.MapPut("/orders/{id}", async (
             string id,
-            [FromBody] UpdateOrderRequest request, 
+            [FromBody] UpdateOrderRequest request,
+            HttpContext httpContext,
             [FromServices] UpdateOrderHandler handler) =>
         {
             // Ensure ID from route matches request body
             var updatedRequest = request with { Id = id };
-            return await handler.Handle(updatedRequest);
+            return await handler.Handle(updatedRequest, httpContext);
         })
         .WithName("UpdateOrder")
         .WithDescription("Update an existing order")
@@ -85,9 +93,12 @@ public static class EndpointConfiguration
         .Produces(StatusCodes.Status409Conflict);
 
         // DELETE
-        app.MapDelete("/orders/{id}", async (string id, [FromServices] DeleteOrderHandler handler) =>
+        app.MapDelete("/orders/{id}", async (
+            string id,
+            HttpContext httpContext,
+            [FromServices] DeleteOrderHandler handler) =>
         {
-            return await handler.Handle(new DeleteOrderRequest(id));
+            return await handler.Handle(new DeleteOrderRequest(id), httpContext);
         })
         .WithName("DeleteOrder")
         .WithDescription("Delete an order by its ID")

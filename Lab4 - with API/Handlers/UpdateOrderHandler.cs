@@ -2,11 +2,13 @@ using AutoMapper;
 using FluentValidation;
 using Lab3.DTO;
 using Lab3.DTO.Request;
+using Lab3.Logging;
 using Lab3.Model;
 using Lab3.Persistence;
 using Lab3.Services;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 
 namespace Lab3.Handlers;
 
@@ -32,44 +34,83 @@ public class UpdateOrderHandler
         _cacheService = cacheService;
     }
 
-    public async Task<Results<Ok<OrderProfileDto>, ValidationProblem, NotFound, Conflict<object>>> Handle(UpdateOrderRequest request)
+    public async Task<Results<Ok<OrderProfileDto>, ValidationProblem, NotFound, Conflict<object>>> Handle(
+        UpdateOrderRequest request, 
+        HttpContext httpContext)
     {
-        _logger.LogInformation("Updating order: {OrderId}", request.Id);
+        var operationId = Guid.NewGuid().ToString("N")[..8];
+        var stopwatch = Stopwatch.StartNew();
+        var traceId = httpContext.TraceIdentifier;
+        
+        _logger.LogInformation(
+            new EventId(LogEvents.OrderUpdateStarted, nameof(LogEvents.OrderUpdateStarted)),
+            "Order update started - OperationId: {OperationId}, OrderId: {OrderId}, TraceId: {TraceId}",
+            operationId, request.Id, traceId);
 
         // Validation
         var validationResult = await _validator.ValidateAsync(request);
         if (!validationResult.IsValid)
         {
-            _logger.LogWarning("Validation failed for order update: {OrderId}", request.Id);
-            return TypedResults.ValidationProblem(validationResult.ToDictionary());
+            _logger.LogWarning(
+                new EventId(LogEvents.ValidationFailed, nameof(LogEvents.ValidationFailed)),
+                "Validation failed for order update - OperationId: {OperationId}, OrderId: {OrderId}, TraceId: {TraceId}",
+                operationId, request.Id, traceId);
+            
+            var extensions = new Dictionary<string, object?> { ["traceId"] = traceId };
+            return TypedResults.ValidationProblem(validationResult.ToDictionary(), extensions: extensions);
         }
 
         // Parse ID
         if (!Guid.TryParse(request.Id, out var orderId))
         {
-            _logger.LogWarning("Invalid order ID format: {OrderId}", request.Id);
+            _logger.LogWarning(
+                new EventId(LogEvents.OrderNotFound, nameof(LogEvents.OrderNotFound)),
+                "Invalid order ID format - OperationId: {OperationId}, OrderId: {OrderId}, TraceId: {TraceId}",
+                operationId, request.Id, traceId);
             return TypedResults.NotFound();
         }
 
         // Check if order exists
+        _logger.LogDatabaseOperationStarted(operationId, "FindOrder");
         var order = await _context.Orders.FindAsync(orderId);
+        
         if (order == null)
         {
-            _logger.LogWarning("Order not found for update: {OrderId}", request.Id);
+            _logger.LogWarning(
+                new EventId(LogEvents.OrderNotFound, nameof(LogEvents.OrderNotFound)),
+                "Order not found for update - OperationId: {OperationId}, OrderId: {OrderId}, TraceId: {TraceId}",
+                operationId, request.Id, traceId);
             return TypedResults.NotFound();
         }
 
-        // Check ISBN uniqueness (excluding current order)
+        // ISBN uniqueness check (excluding current order)
+        var isbnStopwatch = Stopwatch.StartNew();
         var isbnExists = await _context.Orders
             .AnyAsync(o => o.ISBN == request.ISBN && o.Id != orderId);
+        isbnStopwatch.Stop();
+        
+        _logger.LogISBNValidation(operationId, request.ISBN, !isbnExists, isbnStopwatch.ElapsedMilliseconds);
 
         if (isbnExists)
         {
-            _logger.LogWarning("ISBN conflict on update - ISBN: {ISBN}, OrderId: {OrderId}", request.ISBN, request.Id);
-            return TypedResults.Conflict((object)new { message = $"An order with ISBN '{request.ISBN}' already exists" });
+            _logger.LogWarning(
+                new EventId(LogEvents.OrderUpdateFailed, nameof(LogEvents.OrderUpdateFailed)),
+                "ISBN conflict on update - OperationId: {OperationId}, ISBN: {ISBN}, OrderId: {OrderId}, TraceId: {TraceId}",
+                operationId, request.ISBN, request.Id, traceId);
+            return TypedResults.Conflict((object)new 
+            { 
+                message = $"An order with ISBN '{request.ISBN}' already exists",
+                traceId = traceId
+            });
         }
 
+        // Stock validation
+        _logger.LogStockValidation(operationId, request.StockQuantity, request.StockQuantity >= 0);
+
         // Update order properties
+        _logger.LogDatabaseOperationStarted(operationId, "UpdateOrder");
+        var dbStopwatch = Stopwatch.StartNew();
+        
         order.Title = request.Title;
         order.Author = request.Author;
         order.ISBN = request.ISBN;
@@ -80,13 +121,22 @@ public class UpdateOrderHandler
         order.CoverImageUrl = request.CoverImageUrl;
 
         await _context.SaveChangesAsync();
+        dbStopwatch.Stop();
+        
+        _logger.LogDatabaseOperationCompleted(operationId, "UpdateOrder", order.Id.ToString(), dbStopwatch.ElapsedMilliseconds);
 
-        // Invalidate all caches
+        // Invalidate caches
+        _logger.LogCacheOperation(operationId, "InvalidateAllOrderCaches");
         _cacheService.InvalidateAllOrderCaches();
 
         var orderDto = _mapper.Map<OrderProfileDto>(order);
 
-        _logger.LogInformation("Order updated successfully: {OrderId}, Title: {Title}", order.Id, order.Title);
+        stopwatch.Stop();
+        _logger.LogInformation(
+            new EventId(LogEvents.OrderUpdateCompleted, nameof(LogEvents.OrderUpdateCompleted)),
+            "Order updated successfully - OperationId: {OperationId}, OrderId: {OrderId}, Title: {Title}, Duration: {Duration}ms",
+            operationId, order.Id, order.Title, stopwatch.ElapsedMilliseconds);
+            
         return TypedResults.Ok(orderDto);
     }
 }

@@ -31,16 +31,21 @@ public class GetOrdersWithPaginationHandler
         _cacheService = cacheService;
     }
 
-    public async Task<Results<Ok<PagedResult<OrderProfileDto>>, ValidationProblem>> Handle(GetOrdersWithPaginationRequest request)
+    public async Task<Results<Ok<PagedResult<OrderProfileDto>>, ValidationProblem>> Handle(
+        GetOrdersWithPaginationRequest request,
+        HttpContext httpContext)
     {
-        _logger.LogInformation("Getting orders with pagination - Page: {Page}, PageSize: {PageSize}", request.Page, request.PageSize);
+        var traceId = httpContext.TraceIdentifier;
+        _logger.LogInformation("Getting orders with pagination - Page: {Page}, PageSize: {PageSize}, TraceId: {TraceId}", 
+            request.Page, request.PageSize, traceId);
 
         // Validation
         var validationResult = await _validator.ValidateAsync(request);
         if (!validationResult.IsValid)
         {
-            _logger.LogWarning("Validation failed for pagination request");
-            return TypedResults.ValidationProblem(validationResult.ToDictionary());
+            _logger.LogWarning("Validation failed for pagination request - TraceId: {TraceId}", traceId);
+            var extensions = new Dictionary<string, object?> { ["traceId"] = traceId };
+            return TypedResults.ValidationProblem(validationResult.ToDictionary(), extensions: extensions);
         }
 
         // Check cache
@@ -48,7 +53,7 @@ public class GetOrdersWithPaginationHandler
         var cachedResult = _cacheService.GetCachedOrder<PagedResult<OrderProfileDto>>(cacheKey);
         if (cachedResult != null)
         {
-            _logger.LogInformation("Retrieved paginated orders from cache");
+            _logger.LogInformation("Retrieved paginated orders from cache - TraceId: {TraceId}", traceId);
             return TypedResults.Ok(cachedResult);
         }
 
