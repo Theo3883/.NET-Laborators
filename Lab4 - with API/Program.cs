@@ -15,7 +15,7 @@ app.Services.EnsureDatabaseCreated();
 app.UseApplicationMiddleware();
 
 // Map all API endpoints
-app.MapBookEndpoints();
+app.MapOrderEndpoints();
 
 app.Run();
 

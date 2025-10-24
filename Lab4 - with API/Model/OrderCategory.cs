@@ -1,6 +1,6 @@
 namespace Lab3.Model;
 
-public enum BookCategory
+public enum OrderCategory
 {
     Fiction = 0,
     NonFiction = 1,

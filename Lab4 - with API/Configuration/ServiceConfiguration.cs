@@ -3,7 +3,6 @@ using Lab3.Handlers;
 using Lab3.Mapping.Resolvers;
 using Lab3.Persistence;
 using Lab3.Services;
-using Lab3.Validators;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 
@@ -24,38 +23,33 @@ public static class ServiceConfiguration
         // AutoMapper with custom resolvers
         services.AddAutoMapper(typeof(Program).Assembly);
         
-        // Register AutoMapper custom resolvers
-        services.AddTransient<CategoryDisplayResolver>();
-        services.AddTransient<PriceFormatterResolver>();
-        services.AddTransient<PublishedAgeResolver>();
-        services.AddTransient<AuthorInitialsResolver>();
-        services.AddTransient<AvailabilityStatusResolver>();
-        services.AddTransient<ConditionalCoverImageResolver>();
-        services.AddTransient<ConditionalPriceResolver>();
+        // Register AutoMapper custom resolvers for Order
+        services.AddTransient<OrderCategoryDisplayResolver>();
+        services.AddTransient<OrderPriceFormatterResolver>();
+        services.AddTransient<OrderPublishedAgeResolver>();
+        services.AddTransient<OrderAuthorInitialsResolver>();
+        services.AddTransient<OrderAvailabilityStatusResolver>();
+        services.AddTransient<ConditionalOrderCoverImageResolver>();
+        services.AddTransient<ConditionalOrderPriceResolver>();
 
         // Caching
         services.AddMemoryCache();
-        services.AddSingleton<IBookCacheService, BookCacheService>();
+        services.AddSingleton<IOrderCacheService, OrderCacheService>();
 
-        // Multi-language support
-        services.AddSingleton<IBookMetadataService, BookMetadataService>();
-        services.AddScoped<IBookLocalizationService, BookLocalizationService>();
-
-        // FluentValidation
-        services.AddValidatorsFromAssemblyContaining<CreateBookProfileValidator>(ServiceLifetime.Scoped);
+        // FluentValidation - register all validators from assembly
+        services.AddValidatorsFromAssemblyContaining(typeof(Program), ServiceLifetime.Scoped);
 
         // Database
         services.AddDbContext<BookContext>(options => 
-            options.UseSqlite("Data Source=books.db"));
+            options.UseSqlite("Data Source=orders.db"));
 
-        // Handlers
-        services.AddScoped<CreateBookHandler>();
-        services.AddScoped<UpdateBookHandler>();
-        services.AddScoped<DeleteBookHandler>();
-        services.AddScoped<GetBooksWithPaginationHandler>();
-        services.AddScoped<GetBookByIdHandler>();
-        services.AddScoped<GetBookMetricsHandler>();
-        services.AddScoped<BatchCreateBooksHandler>();
+        // Order Handlers
+        services.AddScoped<CreateOrderHandler>();
+        services.AddScoped<GetOrderByIdHandler>();
+        services.AddScoped<GetAllOrdersHandler>();
+        services.AddScoped<GetOrdersWithPaginationHandler>();
+        services.AddScoped<UpdateOrderHandler>();
+        services.AddScoped<DeleteOrderHandler>();
 
         return services;
     }
@@ -68,9 +62,9 @@ public static class ServiceConfiguration
         {
             options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
             {
-                Title = "Book Management API",
+                Title = "Order Management API",
                 Version = "v1",
-                Description = "A comprehensive book management system with multi-language support, caching, and batch operations"
+                Description = "A comprehensive order management system with caching, validation, and CRUD operations"
             });
         });
 
