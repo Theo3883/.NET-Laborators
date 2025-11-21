@@ -6,18 +6,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace WebApplication1.Handlers;
 
-public class GetPaperByIdHandler
+/// <summary>
+/// Handler for retrieving a paper by ID
+/// </summary>
+public class GetPaperByIdHandler(
+    PaperContext context,
+    ILogger<GetPaperByIdHandler> logger)
+    : IGetPaperByIdHandler
 {
-    private readonly PaperContext _context;
-    private readonly ILogger<GetPaperByIdHandler> _logger;
-
-    public GetPaperByIdHandler(
-        PaperContext context,
-        ILogger<GetPaperByIdHandler> logger)
-    {
-        _context = context;
-        _logger = logger;
-    }
+    private readonly PaperContext _context = context ?? throw new ArgumentNullException(nameof(context));
+    private readonly ILogger<GetPaperByIdHandler> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     public async Task<Results<Ok<Paper>, NotFound>> Handle(
         GetPaperByIdRequest request, 

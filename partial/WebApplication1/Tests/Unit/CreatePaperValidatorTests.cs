@@ -11,12 +11,7 @@ namespace WebApplication1.Tests.Unit;
 /// </summary>
 public class CreatePaperValidatorTests
 {
-    private readonly CreatePaperValidator _validator;
-
-    public CreatePaperValidatorTests()
-    {
-        _validator = new CreatePaperValidator();
-    }
+    private readonly CreatePaperValidator _validator = new();
 
     #region Title Validation Tests
 

@@ -5,18 +5,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace WebApplication1.Handlers;
 
-public class GetTop3PapersHandler
+/// <summary>
+/// Handler for retrieving top 3 most recent papers
+/// </summary>
+public class GetTop3PapersHandler(
+    PaperContext context,
+    ILogger<GetTop3PapersHandler> logger)
+    : IGetTop3PapersHandler
 {
-    private readonly PaperContext _context;
-    private readonly ILogger<GetTop3PapersHandler> _logger;
-
-    public GetTop3PapersHandler(
-        PaperContext context,
-        ILogger<GetTop3PapersHandler> logger)
-    {
-        _context = context;
-        _logger = logger;
-    }
+    private readonly PaperContext _context = context ?? throw new ArgumentNullException(nameof(context));
+    private readonly ILogger<GetTop3PapersHandler> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     public async Task<Ok<List<Paper>>> Handle(HttpContext httpContext)
     {

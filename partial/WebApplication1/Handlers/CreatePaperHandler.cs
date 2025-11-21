@@ -1,26 +1,26 @@
 using FluentValidation;
 using WebApplication1.DTO.Request;
+using WebApplication1.Mappers;
 using WebApplication1.Model;
 using WebApplication1.Persistence;
 using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace WebApplication1.Handlers;
 
-public class CreatePaperHandler
+/// <summary>
+/// Handler for creating new papers
+/// </summary>
+public class CreatePaperHandler(
+    PaperContext context,
+    IValidator<CreatePaperRequest> validator,
+    IPaperMapper mapper,
+    ILogger<CreatePaperHandler> logger)
+    : ICreatePaperHandler
 {
-    private readonly PaperContext _context;
-    private readonly IValidator<CreatePaperRequest> _validator;
-    private readonly ILogger<CreatePaperHandler> _logger;
-
-    public CreatePaperHandler(
-        PaperContext context,
-        IValidator<CreatePaperRequest> validator,
-        ILogger<CreatePaperHandler> logger)
-    {
-        _context = context;
-        _validator = validator;
-        _logger = logger;
-    }
+    private readonly PaperContext _context = context ?? throw new ArgumentNullException(nameof(context));
+    private readonly IValidator<CreatePaperRequest> _validator = validator ?? throw new ArgumentNullException(nameof(validator));
+    private readonly IPaperMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+    private readonly ILogger<CreatePaperHandler> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     public async Task<Results<Created<Paper>, ValidationProblem>> Handle(
         CreatePaperRequest request, 
@@ -48,13 +48,8 @@ public class CreatePaperHandler
             return TypedResults.ValidationProblem(errors, extensions: extensions);
         }
 
-        // Create paper entity
-        var paper = new Paper
-        {
-            Title = request.Title,
-            Author = request.Author,
-            PublishedOn = request.PublishedOn
-        };
+        // Map request to entity using mapper abstraction
+        var paper = _mapper.MapToEntity(request);
         
         _context.Papers.Add(paper);
         await _context.SaveChangesAsync();

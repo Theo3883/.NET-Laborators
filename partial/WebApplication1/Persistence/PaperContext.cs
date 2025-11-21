@@ -3,12 +3,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace WebApplication1.Persistence;
 
-public class PaperContext : DbContext
+public class PaperContext(DbContextOptions<PaperContext> options) : DbContext(options)
 {
-    public PaperContext(DbContextOptions<PaperContext> options) : base(options)
-    {
-    }
-    
     public DbSet<Paper> Papers => Set<Paper>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

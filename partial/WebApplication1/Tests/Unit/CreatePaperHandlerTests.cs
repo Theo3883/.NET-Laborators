@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using WebApplication1.DTO.Request;
 using WebApplication1.Handlers;
+using WebApplication1.Mappers;
 using WebApplication1.Model;
 using WebApplication1.Persistence;
 using Xunit;
@@ -21,6 +22,7 @@ public class CreatePaperHandlerTests : IDisposable
 {
     private readonly PaperContext _context;
     private readonly Mock<IValidator<CreatePaperRequest>> _validatorMock;
+    private readonly Mock<IPaperMapper> _mapperMock;
     private readonly Mock<ILogger<CreatePaperHandler>> _loggerMock;
     private readonly CreatePaperHandler _handler;
     private readonly Mock<HttpContext> _httpContextMock;
@@ -35,12 +37,22 @@ public class CreatePaperHandlerTests : IDisposable
 
         // Setup mocks
         _validatorMock = new Mock<IValidator<CreatePaperRequest>>();
+        _mapperMock = new Mock<IPaperMapper>();
         _loggerMock = new Mock<ILogger<CreatePaperHandler>>();
         _httpContextMock = new Mock<HttpContext>();
         _httpContextMock.Setup(x => x.TraceIdentifier).Returns("TEST-TRACE-001");
 
+        // Setup mapper mock to return a valid paper
+        _mapperMock.Setup(m => m.MapToEntity(It.IsAny<CreatePaperRequest>()))
+            .Returns((CreatePaperRequest req) => new Paper
+            {
+                Title = req.Title,
+                Author = req.Author,
+                PublishedOn = req.PublishedOn
+            });
+
         // Create handler with mocked dependencies
-        _handler = new CreatePaperHandler(_context, _validatorMock.Object, _loggerMock.Object);
+        _handler = new CreatePaperHandler(_context, _validatorMock.Object, _mapperMock.Object, _loggerMock.Object);
     }
 
     [Fact]
@@ -79,6 +91,9 @@ public class CreatePaperHandlerTests : IDisposable
 
         // Verify validator was called
         _validatorMock.Verify(v => v.ValidateAsync(request, It.IsAny<CancellationToken>()), Times.Once);
+
+        // Verify mapper was called (SOLID: Dependency Inversion Principle verification)
+        _mapperMock.Verify(m => m.MapToEntity(request), Times.Once);
 
         // Verify logging
         _loggerMock.Verify(

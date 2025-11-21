@@ -5,18 +5,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace WebApplication1.Handlers;
 
-public class GetAllPapersHandler
+/// <summary>
+/// Handler for retrieving all papers
+/// </summary>
+public class GetAllPapersHandler(
+    PaperContext context,
+    ILogger<GetAllPapersHandler> logger)
+    : IGetAllPapersHandler
 {
-    private readonly PaperContext _context;
-    private readonly ILogger<GetAllPapersHandler> _logger;
-
-    public GetAllPapersHandler(
-        PaperContext context,
-        ILogger<GetAllPapersHandler> logger)
-    {
-        _context = context;
-        _logger = logger;
-    }
+    private readonly PaperContext _context = context ?? throw new ArgumentNullException(nameof(context));
+    private readonly ILogger<GetAllPapersHandler> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     public async Task<Ok<List<Paper>>> Handle(HttpContext httpContext)
     {

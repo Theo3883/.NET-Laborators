@@ -1,6 +1,7 @@
 using FluentValidation;
 using WebApplication1.Persistence;
 using WebApplication1.Handlers;
+using WebApplication1.Mappers;
 using Microsoft.EntityFrameworkCore;
 
 namespace WebApplication1.Configuration;
@@ -19,7 +20,16 @@ public static class ServiceConfiguration
         services.AddDbContext<PaperContext>(options => 
             options.UseSqlite("Data Source=papers.db"));
 
-        // Paper Handlers
+        // Mappers - Register mapper abstraction with concrete implementation
+        services.AddSingleton<IPaperMapper, PaperMapper>();
+
+        // Paper Handlers - Register interface with implementation
+        services.AddScoped<ICreatePaperHandler, CreatePaperHandler>();
+        services.AddScoped<IGetPaperByIdHandler, GetPaperByIdHandler>();
+        services.AddScoped<IGetAllPapersHandler, GetAllPapersHandler>();
+        services.AddScoped<IGetTop3PapersHandler, GetTop3PapersHandler>();
+        
+        // Also register concrete types for backward compatibility with endpoints
         services.AddScoped<CreatePaperHandler>();
         services.AddScoped<GetPaperByIdHandler>();
         services.AddScoped<GetAllPapersHandler>();
@@ -32,6 +42,17 @@ public static class ServiceConfiguration
     {
         services.AddOpenApi();
         services.AddEndpointsApiExplorer();
+        
+        // Add Swagger/OpenAPI support
+        services.AddSwaggerGen(options =>
+        {
+            options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+            {
+                Title = "Papers API",
+                Version = "v1",
+                Description = "API for managing academic papers"
+            });
+        });
 
         return services;
     }
