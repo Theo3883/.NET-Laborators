@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<OrderMetadata Culture="de-DE">
+  <CategoryTranslations>
+    <Category Key="Fiction">Fiktion und Literatur</Category>
+    <Category Key="NonFiction">Sachbuch</Category>
+    <Category Key="Technical">Technisch und Professionell</Category>
+    <Category Key="Children">Kinderbücher</Category>
+  </CategoryTranslations>
+  <CommonTerms>
+    <Term Key="InStock">Auf Lager</Term>
+    <Term Key="OutOfStock">Nicht Verfügbar</Term>
+    <Term Key="LowStock">Geringer Bestand</Term>
+    <Term Key="NewArrival">Neuankömmling</Term>
+    <Term Key="BestSeller">Bestseller</Term>
+    <Term Key="Author">Autor</Term>
+    <Term Key="Publisher">Verlag</Term>
+    <Term Key="PublishedDate">Veröffentlichungsdatum</Term>
+    <Term Key="Price">Preis</Term>
+    <Term Key="Stock">Lagerbestand</Term>
+    <Term Key="Available">Verfügbar</Term>
+    <Term Key="Unavailable">Nicht Verfügbar</Term>
+    <Term Key="Description">Beschreibung</Term>
+    <Term Key="ISBN">ISBN</Term>
+    <Term Key="CoverImage">Titelbild</Term>
+    <Term Key="Keywords">Schlüsselwörter</Term>
+  </CommonTerms>
+  <Descriptions>
+    <CategoryDescription Category="Fiction">Fiktionale und literarische Werke einschließlich Romane, Kurzgeschichten und Gedichte</CategoryDescription>
+    <CategoryDescription Category="NonFiction">Sachbücher einschließlich Biografien, Geschichte und Nachschlagewerke</CategoryDescription>
+    <CategoryDescription Category="Technical">Technische und professionelle Bücher über Technologie, Programmierung und Ingenieurwesen</CategoryDescription>
+    <CategoryDescription Category="Children">Bücher für Kinder einschließlich Bilderbücher, Erstleser und Jugendbücher</CategoryDescription>
+  </Descriptions>
+</OrderMetadata>

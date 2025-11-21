@@ -1,5 +1,6 @@
 using Lab3.DTO;
 using Lab3.DTO.Request;
+using Lab3.DTO.Response;
 using Lab3.Handlers;
 using Microsoft.AspNetCore.Mvc;
 
@@ -58,6 +59,20 @@ public static class EndpointConfiguration
         .WithTags("Orders")
         .Produces<List<OrderProfileDto>>(StatusCodes.Status200OK);
 
+        // GET BY CATEGORY with category-based caching
+        app.MapGet("/orders/category/{category}", async (
+            string category,
+            HttpContext httpContext,
+            [FromServices] GetOrdersByCategoryHandler handler) =>
+        {
+            return await handler.Handle(category, httpContext);
+        })
+        .WithName("GetOrdersByCategory")
+        .WithDescription("Retrieve orders filtered by category (Fiction, NonFiction, Technical, Children) with category-specific caching")
+        .WithTags("Orders")
+        .Produces<List<OrderProfileDto>>(StatusCodes.Status200OK)
+        .ProducesValidationProblem();
+
         // GET WITH PAGINATION
         app.MapGet("/orders/paginated", async (
             [FromQuery] int page, 
@@ -106,5 +121,32 @@ public static class EndpointConfiguration
         .Produces(StatusCodes.Status204NoContent)
         .ProducesValidationProblem()
         .Produces(StatusCodes.Status404NotFound);
+        
+        // METRICS DASHBOARD
+        app.MapGet("/orders/metrics", async (
+            HttpContext httpContext,
+            [FromServices] GetOrderMetricsHandler handler) =>
+        {
+            return await handler.HandleAsync(httpContext);
+        })
+        .WithName("GetOrderMetrics")
+        .WithDescription("Get comprehensive order metrics dashboard including creation stats, inventory metrics, category breakdown, and real-time performance data")
+        .WithTags("Orders", "Metrics")
+        .Produces<OrderMetricsDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status500InternalServerError);
+        
+        // LOCALIZED ORDERS
+        app.MapGet("/orders/localized", async (
+            HttpContext httpContext,
+            [FromQuery] string? culture,
+            [FromServices] GetLocalizedOrdersHandler handler) =>
+        {
+            return await handler.HandleAsync(culture, httpContext);
+        })
+        .WithName("GetLocalizedOrders")
+        .WithDescription("Get all orders with localized category names and descriptions. Supports en-US, fr-FR, es-ES, de-DE. Use ?culture=fr-FR query parameter.")
+        .WithTags("Orders", "Localization")
+        .Produces<List<OrderProfileDto>>(StatusCodes.Status200OK)
+        .Produces<string>(StatusCodes.Status400BadRequest);
     }
 }

@@ -1,0 +1,4 @@
+# GET /orders/{id}
+# Replace {id} with the GUID of the order you want to fetch.
+# Example curl:
+# curl -s http://localhost:5021/orders/{id} | jq

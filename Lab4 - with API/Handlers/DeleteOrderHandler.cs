@@ -80,15 +80,22 @@ public class DeleteOrderHandler
         _logger.LogDatabaseOperationStarted(operationId, "DeleteOrder");
         var dbStopwatch = Stopwatch.StartNew();
         
+        // Track category before deletion for cache invalidation
+        var orderCategory = order.Category;
+        
         _context.Orders.Remove(order);
         await _context.SaveChangesAsync();
         
         dbStopwatch.Stop();
         _logger.LogDatabaseOperationCompleted(operationId, "DeleteOrder", order.Id.ToString(), dbStopwatch.ElapsedMilliseconds);
 
-        // Invalidate caches
-        _logger.LogCacheOperation(operationId, "InvalidateAllOrderCaches");
-        _cacheService.InvalidateAllOrderCaches();
+        // Category-based cache invalidation: Only invalidate the affected category
+        _logger.LogCacheOperation(operationId, "InvalidateCategoryCache", orderCategory.ToString());
+        _cacheService.InvalidateCategoryCache(orderCategory);
+        
+        // Also invalidate global cache and specific order cache
+        _cacheService.InvalidateOrderCache("orders_all");
+        _cacheService.InvalidateOrderCache($"order_{order.Id}");
 
         stopwatch.Stop();
         _logger.LogInformation(

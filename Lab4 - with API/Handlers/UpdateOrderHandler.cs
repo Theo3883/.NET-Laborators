@@ -111,6 +111,9 @@ public class UpdateOrderHandler
         _logger.LogDatabaseOperationStarted(operationId, "UpdateOrder");
         var dbStopwatch = Stopwatch.StartNew();
         
+        // Track old category for cache invalidation
+        var oldCategory = order.Category;
+        
         order.Title = request.Title;
         order.Author = request.Author;
         order.ISBN = request.ISBN;
@@ -125,9 +128,22 @@ public class UpdateOrderHandler
         
         _logger.LogDatabaseOperationCompleted(operationId, "UpdateOrder", order.Id.ToString(), dbStopwatch.ElapsedMilliseconds);
 
-        // Invalidate caches
-        _logger.LogCacheOperation(operationId, "InvalidateAllOrderCaches");
-        _cacheService.InvalidateAllOrderCaches();
+        // Category-based cache invalidation: Invalidate both old and new categories if changed
+        if (oldCategory != order.Category)
+        {
+            _logger.LogCacheOperation(operationId, "InvalidateCategoryCache", $"old_{oldCategory}_new_{order.Category}");
+            _cacheService.InvalidateCategoryCache(oldCategory);
+            _cacheService.InvalidateCategoryCache(order.Category);
+        }
+        else
+        {
+            _logger.LogCacheOperation(operationId, "InvalidateCategoryCache", order.Category.ToString());
+            _cacheService.InvalidateCategoryCache(order.Category);
+        }
+        
+        // Also invalidate global cache
+        _cacheService.InvalidateOrderCache("orders_all");
+        _cacheService.InvalidateOrderCache($"order_{order.Id}");
 
         var orderDto = _mapper.Map<OrderProfileDto>(order);
 

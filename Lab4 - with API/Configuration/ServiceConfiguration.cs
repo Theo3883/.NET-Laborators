@@ -35,6 +35,13 @@ public static class ServiceConfiguration
         // Caching
         services.AddMemoryCache();
         services.AddSingleton<IOrderCacheService, OrderCacheService>();
+        
+        // Metrics - Singleton collector for performance data, Scoped service for database queries
+        services.AddSingleton<PerformanceMetricsCollector>();
+        services.AddScoped<IOrderMetricsService, OrderMetricsService>();
+        
+        // Localization - Singleton to load XML resources once
+        services.AddSingleton<IOrderLocalizationService, OrderLocalizationService>();
 
         // FluentValidation - register all validators from assembly
         services.AddValidatorsFromAssemblyContaining(typeof(Program), ServiceLifetime.Scoped);
@@ -48,8 +55,11 @@ public static class ServiceConfiguration
         services.AddScoped<GetOrderByIdHandler>();
         services.AddScoped<GetAllOrdersHandler>();
         services.AddScoped<GetOrdersWithPaginationHandler>();
+        services.AddScoped<GetOrdersByCategoryHandler>();
         services.AddScoped<UpdateOrderHandler>();
         services.AddScoped<DeleteOrderHandler>();
+        services.AddScoped<GetOrderMetricsHandler>();
+        services.AddScoped<GetLocalizedOrdersHandler>();
 
         return services;
     }

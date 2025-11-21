@@ -1,0 +1,11 @@
+{
+  "title": "Scalable programming System Design",
+  "author": "Jane Doe",
+  "isbn": "9781234567897",
+  "category": "Technical",
+  "price": 39.99,
+  "publishedDate": "2022-06-01",
+  "stockQuantity": 25,
+  "coverImageUrl": null,
+  "keywords": ["programming", "design"]
+}

@@ -2,36 +2,62 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Lab3.Attributes;
 
+/// <summary>
+/// Custom validation attribute for price range validation.
+/// Accepts min and max price in constructor (as double, converts to decimal).
+/// </summary>
 public class PriceRangeAttribute : ValidationAttribute
 {
     private readonly decimal _minPrice;
     private readonly decimal _maxPrice;
 
+    /// <summary>
+    /// Accepts min and max price in constructor (as double, convert to decimal).
+    /// Generates error message with currency formatting.
+    /// </summary>
     public PriceRangeAttribute(double minPrice, double maxPrice)
     {
-        this._minPrice = (decimal)minPrice;
-        this._maxPrice = (decimal)maxPrice;
+        _minPrice = (decimal)minPrice;
+        _maxPrice = (decimal)maxPrice;
         
-        ErrorMessage = $"Price must be between {this._minPrice:C} and {this._maxPrice:C}";
+        // Generate error message with currency formatting
+        ErrorMessage = $"Price must be between {_minPrice:C} and {_maxPrice:C}";
     }
 
+    /// <summary>
+    /// Implements IsValid() method for price range validation.
+    /// </summary>
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
     {
         if (value == null)
         {
-            return new ValidationResult("Price is required.");
+            // Allow null - use [Required] for required validation
+            return ValidationResult.Success;
         }
 
-        if (value is not decimal price)
+        // Handle both decimal and convertible numeric types
+        decimal price;
+        try
         {
-            return new ValidationResult("Invalid price type.");
+            price = Convert.ToDecimal(value);
+        }
+        catch
+        {
+            return new ValidationResult(
+                "Invalid price format.",
+                new[] { validationContext.MemberName ?? "Price" }
+            );
         }
 
+        // Validate price is within range
         if (price >= _minPrice && price <= _maxPrice)
         {
             return ValidationResult.Success;
         }
 
-        return new ValidationResult(ErrorMessage);
+        return new ValidationResult(
+            ErrorMessage,
+            new[] { validationContext.MemberName ?? "Price" }
+        );
     }
 }

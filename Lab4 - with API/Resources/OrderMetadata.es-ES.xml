@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<OrderMetadata Culture="es-ES">
+  <CategoryTranslations>
+    <Category Key="Fiction">Ficción y Literatura</Category>
+    <Category Key="NonFiction">No Ficción</Category>
+    <Category Key="Technical">Técnico y Profesional</Category>
+    <Category Key="Children">Libros Infantiles</Category>
+  </CategoryTranslations>
+  <CommonTerms>
+    <Term Key="InStock">En Stock</Term>
+    <Term Key="OutOfStock">Agotado</Term>
+    <Term Key="LowStock">Stock Bajo</Term>
+    <Term Key="NewArrival">Nueva Llegada</Term>
+    <Term Key="BestSeller">Más Vendido</Term>
+    <Term Key="Author">Autor</Term>
+    <Term Key="Publisher">Editorial</Term>
+    <Term Key="PublishedDate">Fecha de Publicación</Term>
+    <Term Key="Price">Precio</Term>
+    <Term Key="Stock">Cantidad en Stock</Term>
+    <Term Key="Available">Disponible</Term>
+    <Term Key="Unavailable">No Disponible</Term>
+    <Term Key="Description">Descripción</Term>
+    <Term Key="ISBN">ISBN</Term>
+    <Term Key="CoverImage">Imagen de Portada</Term>
+    <Term Key="Keywords">Palabras Clave</Term>
+  </CommonTerms>
+  <Descriptions>
+    <CategoryDescription Category="Fiction">Obras de ficción y literarias incluyendo novelas, cuentos cortos y poesía</CategoryDescription>
+    <CategoryDescription Category="NonFiction">Libros de no ficción incluyendo biografías, historia y materiales de referencia</CategoryDescription>
+    <CategoryDescription Category="Technical">Libros técnicos y profesionales sobre tecnología, programación e ingeniería</CategoryDescription>
+    <CategoryDescription Category="Children">Libros para niños incluyendo libros ilustrados, primeros lectores y ficción juvenil</CategoryDescription>
+  </Descriptions>
+</OrderMetadata>

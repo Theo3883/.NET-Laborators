@@ -4,44 +4,78 @@ using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace Lab3.Attributes;
 
+/// <summary>
+/// Custom validation attribute for ISBN format validation (10 or 13 digits).
+/// Supports both client-side and server-side validation.
+/// </summary>
 public class ValidISBNAttribute : ValidationAttribute, IClientModelValidator
 {
-    public ValidISBNAttribute()
+    private const string DefaultErrorMessage = "ISBN must be a valid format (10 or 13 digits, may contain hyphens or spaces)";
+
+    public ValidISBNAttribute() : base(DefaultErrorMessage)
     {
-        ErrorMessage = "ISBN must be a valid ISBN-10 or ISBN-13 format.";
     }
 
+    /// <summary>
+    /// Implements IsValid() method to validate ISBN format (10 or 13 digits).
+    /// Removes hyphens and spaces before validation.
+    /// </summary>
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
     {
         if (value == null || string.IsNullOrWhiteSpace(value.ToString()))
         {
+            // Allow null/empty - use [Required] for required validation
             return ValidationResult.Success;
         }
 
         var isbn = value.ToString()!;
         
-        // Remove hyphens and spaces
+        // Remove hyphens and spaces before validation
         var cleanIsbn = isbn.Replace("-", "").Replace(" ", "");
 
-        // Check for ISBN-10 (10 digits, last can be X)
-        if (cleanIsbn.Length == 10 && Regex.IsMatch(cleanIsbn, @"^\d{9}[\dX]$"))
+        // Validate 10 or 13 digits
+        var isValid = Regex.IsMatch(cleanIsbn, @"^\d{10}$|^\d{13}$");
+
+        if (!isValid)
         {
-            return ValidationResult.Success;
+            return new ValidationResult(
+                ErrorMessage ?? DefaultErrorMessage,
+                new[] { validationContext.MemberName ?? "ISBN" }
+            );
         }
 
-        // Check for ISBN-13 (13 digits starting with 978 or 979)
-        if (cleanIsbn.Length == 13 && Regex.IsMatch(cleanIsbn, @"^(978|979)\d{10}$"))
-        {
-            return ValidationResult.Success;
-        }
-
-        return new ValidationResult(ErrorMessage);
+        return ValidationResult.Success;
     }
 
+    /// <summary>
+    /// Implements AddValidation() for client-side validation.
+    /// Adds data attributes for client ISBN validation.
+    /// </summary>
     public void AddValidation(ClientModelValidationContext context)
     {
-        context.Attributes.Add("data-val", "true");
-        context.Attributes.Add("data-val-isbn", ErrorMessage ?? "Invalid ISBN format.");
-        context.Attributes.Add("data-val-isbn-pattern", @"^[\d\-\s]{10,17}$");
+        if (context == null)
+        {
+            throw new ArgumentNullException(nameof(context));
+        }
+
+        // Add data-val attribute to enable client validation
+        MergeAttribute(context.Attributes, "data-val", "true");
+        
+        // Add custom data-val-isbn attribute for error message
+        MergeAttribute(context.Attributes, "data-val-isbn", ErrorMessage ?? DefaultErrorMessage);
+        
+        // Add pattern for client-side regex validation
+        MergeAttribute(context.Attributes, "data-val-isbn-pattern", @"^[\d\s\-]{10,17}$");
+    }
+
+    /// <summary>
+    /// Helper method to merge attributes without duplicates.
+    /// </summary>
+    private void MergeAttribute(IDictionary<string, string> attributes, string key, string value)
+    {
+        if (!attributes.ContainsKey(key))
+        {
+            attributes.Add(key, value);
+        }
     }
 }

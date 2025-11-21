@@ -17,4 +17,9 @@ public class OrderProfileDto
     public string PublishedAge { get; set; } = string.Empty;
     public string AuthorInitials { get; set; } = string.Empty;
     public string AvailabilityStatus { get; set; } = string.Empty;
+    
+    // Localization support
+    public string? Culture { get; set; }
+    public string? LocalizedCategoryName { get; set; }
+    public string? LocalizedCategoryDescription { get; set; }
 }

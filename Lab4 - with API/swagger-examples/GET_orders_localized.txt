@@ -1,0 +1,5 @@
+# GET /orders/localized?culture={culture}
+# Replace {culture} with one of: en-US, fr-FR, es-ES, de-DE
+# Example curl:
+# curl -s "http://localhost:5021/orders/localized?culture=fr-FR" | jq
+

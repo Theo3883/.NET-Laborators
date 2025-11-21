@@ -19,19 +19,22 @@ public class CreateOrderHandler
     private readonly IMapper _mapper;
     private readonly ILogger<CreateOrderHandler> _logger;
     private readonly IOrderCacheService _cacheService;
+    private readonly IOrderMetricsService _metricsService;
 
     public CreateOrderHandler(
         BookContext context,
         IValidator<CreateOrderProfileRequest> validator,
         IMapper mapper,
         ILogger<CreateOrderHandler> logger,
-        IOrderCacheService cacheService)
+        IOrderCacheService cacheService,
+        IOrderMetricsService metricsService)
     {
         _context = context;
         _validator = validator;
         _mapper = mapper;
         _logger = logger;
         _cacheService = cacheService;
+        _metricsService = metricsService;
     }
 
     public async Task<Results<Created<OrderProfileDto>, ValidationProblem, Conflict<object>>> Handle(
@@ -70,6 +73,9 @@ public class CreateOrderHandler
             var validationResult = await _validator.ValidateAsync(request);
             validationStopwatch.Stop();
             validationDuration = validationStopwatch.Elapsed;
+            
+            // Record validation performance metrics
+            _metricsService.RecordValidationTime(validationDuration.TotalMilliseconds);
 
             if (!validationResult.IsValid)
             {
@@ -160,6 +166,9 @@ public class CreateOrderHandler
             
             dbStopwatch.Stop();
             databaseDuration = dbStopwatch.Elapsed;
+            
+            // Record database performance metrics
+            _metricsService.RecordDatabaseOperationTime(databaseDuration.TotalMilliseconds);
 
             // Log database operation completion with OrderId
             _logger.LogDatabaseOperationCompleted(
@@ -168,9 +177,14 @@ public class CreateOrderHandler
                 order.Id.ToString(), 
                 dbStopwatch.ElapsedMilliseconds);
 
-            // Cache invalidation with "all_orders" cache key logging
+            // Category-based cache invalidation: Only invalidate caches for the affected category
+            var categoryKey = _cacheService.GetCategoryAllOrdersKey(order.Category);
+            _logger.LogCacheOperation(operationId, "InvalidateCategoryCache", categoryKey);
+            _cacheService.InvalidateCategoryCache(order.Category);
+            
+            // Also invalidate global "all orders" cache
             _logger.LogCacheOperation(operationId, "InvalidateAllOrderCaches", "orders_all");
-            _cacheService.InvalidateAllOrderCaches();
+            _cacheService.InvalidateOrderCache("orders_all");
 
             // Map to DTO with custom resolvers (conditional price, cover image, etc.)
             var orderDto = _mapper.Map<OrderProfileDto>(order);
